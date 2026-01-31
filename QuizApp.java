@@ -2,7 +2,6 @@ package Coursework1;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.*;
 
 // QuizApp.java - Quiz using database questions
 public class QuizApp {
@@ -17,33 +16,14 @@ public class QuizApp {
 
     // Constructor
     public QuizApp() {
-        loadQuestionsFromDB();  // Load 25 questions from MySQL
-        answers = new int[questions.length];
+        
         showLoginWindow();
     }
-
-  
-    // LOAD QUESTIONS FROM DATABASE
-  
-    private void loadQuestionsFromDB() {
-        questions = QuestionDBHandler.getAllQuestions();
-
-        if (questions.length != 25) {
-            JOptionPane.showMessageDialog(
-                    null,
-                    "ERROR: Exactly 25 questions required. Found: " + questions.length
-            );
-            System.exit(0);
-        }
-
-        answers = new int[questions.length];
-    }
-
-
 
     // 1. LOGIN WINDOW
   
     private void showLoginWindow() {
+    	
         frame = new JFrame("Quiz App");
         frame.setSize(350, 220);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -77,6 +57,7 @@ public class QuizApp {
         frame.setVisible(true);
 
         loginBtn.addActionListener(e -> {
+        	
             String fullName = nameField.getText().trim();
             String country = countryField.getText().trim();
             String level = (String) levelBox.getSelectedItem();
@@ -95,10 +76,22 @@ public class QuizApp {
             int[] scores = new int[5];
 
             currentUser = new QuizCompetitor(0, name, level, country, scores);
+         // LOAD QUESTIONS BASED ON LEVEL
+            questions = QuestionDBHandler.getQuestionsByLevel(level);
 
+            if (questions.length != 25) {
+                JOptionPane.showMessageDialog(
+                    null,
+                    "ERROR: 25 questions required for " + level
+                );
+                System.exit(0);
+            }
+
+            answers = new int[questions.length];
             frame.dispose();
             showMainMenu();
         });
+        
     }
 
     
@@ -106,7 +99,7 @@ public class QuizApp {
    
     private void showMainMenu() {
         frame = new JFrame("Quiz App");
-        frame.setSize(300, 300);
+        frame.setSize(400, 200);
         frame.setLocationRelativeTo(null);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
@@ -311,7 +304,7 @@ public class QuizApp {
         dialog.pack();
         dialog.setLocationRelativeTo(frame);
 
-        // ✅ Back button logic
+        //  Back button logic
         backBtn.addActionListener(e -> dialog.dispose());
 
         dialog.setVisible(true);
