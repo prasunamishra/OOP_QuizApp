@@ -14,6 +14,7 @@ public class QuizApp {
     private int currentQuestion = 0;
 
     public QuizApp() {
+<<<<<<< HEAD
         showLoginWindow();   // Do NOT load questions here
     }
 
@@ -35,7 +36,16 @@ public class QuizApp {
     }
 
     // ================= LOGIN WINDOW =================
+=======
+        
+        showLoginWindow();
+    }
+
+    // 1. LOGIN WINDOW
+  
+>>>>>>> 7614aa90571b065a38862d7343329bf41aa0e527
     private void showLoginWindow() {
+    	
         frame = new JFrame("Quiz App");
         frame.setSize(350, 220);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -64,6 +74,7 @@ public class QuizApp {
         frame.setVisible(true);
 
         loginBtn.addActionListener(e -> {
+        	
             String fullName = nameField.getText().trim();
             String country = countryField.getText().trim();
             String level = (String) levelBox.getSelectedItem();
@@ -80,18 +91,34 @@ public class QuizApp {
             Name name = new Name(first, last);
             currentUser = new QuizCompetitor(0, name, level, country, new int[5]);
 
+<<<<<<< HEAD
             // ✅ IMPORTANT
             loadQuestionsFromDB(level);
+=======
+            currentUser = new QuizCompetitor(0, name, level, country, scores);
+         // LOAD QUESTIONS BASED ON LEVEL
+            questions = QuestionDBHandler.getQuestionsByLevel(level);
+>>>>>>> 7614aa90571b065a38862d7343329bf41aa0e527
 
+            if (questions.length != 25) {
+                JOptionPane.showMessageDialog(
+                    null,
+                    "ERROR: 25 questions required for " + level
+                );
+                System.exit(0);
+            }
+
+            answers = new int[questions.length];
             frame.dispose();
             showMainMenu();
         });
+        
     }
 
     // ================= MAIN MENU =================
     private void showMainMenu() {
         frame = new JFrame("Quiz App");
-        frame.setSize(300, 300);
+        frame.setSize(400, 200);
         frame.setLocationRelativeTo(null);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
@@ -310,6 +337,10 @@ public class QuizApp {
         dialog.pack();
         dialog.setLocationRelativeTo(frame);
 
+<<<<<<< HEAD
+=======
+        //  Back button logic
+>>>>>>> 7614aa90571b065a38862d7343329bf41aa0e527
         backBtn.addActionListener(e -> dialog.dispose());
 
         dialog.setVisible(true);
