@@ -2,6 +2,7 @@ package Coursework1;
 
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.Collections;
 
 public class QuestionDBHandler {
 
@@ -9,13 +10,19 @@ public class QuestionDBHandler {
     private static final String USER = "root";
     private static final String PASSWORD = "";
 
-    public static Question[] getAllQuestions() {
+    // ✅ NEW METHOD: Get questions by level and shuffle
+    public static Question[] getQuestionsByLevel(String level) {
 
         ArrayList<Question> list = new ArrayList<>();
 
+        String sql = "SELECT * FROM Questions WHERE level = ?";
+
         try (Connection conn = DriverManager.getConnection(URL, USER, PASSWORD);
-             Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery("SELECT * FROM Questions")) {
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setString(1, level);
+
+            ResultSet rs = pstmt.executeQuery();
 
             while (rs.next()) {
 
@@ -26,8 +33,7 @@ public class QuestionDBHandler {
                         rs.getString("option4")
                 };
 
-             // CORRECT: DB already stores 0–3
-                int correct = rs.getInt("correctOption") ;
+                int correct = rs.getInt("correctOption");
 
                 list.add(new Question(
                         rs.getString("questionText"),
@@ -39,6 +45,9 @@ public class QuestionDBHandler {
         } catch (SQLException e) {
             e.printStackTrace();
         }
+
+        // ✅ Shuffle questions every time
+        Collections.shuffle(list);
 
         return list.toArray(new Question[0]);
     }

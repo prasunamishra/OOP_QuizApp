@@ -2,36 +2,31 @@ package Coursework1;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.*;
 
-// QuizApp.java - Quiz using database questions
 public class QuizApp {
 
     private JFrame frame;
     private JPanel panel;
     private QuizCompetitor currentUser;
 
-    private Question[] questions;      // Questions from DB
-    private int[] answers;             // store selected option index 0-3
+    private Question[] questions;
+    private int[] answers;
     private int currentQuestion = 0;
 
-    // Constructor
     public QuizApp() {
-        loadQuestionsFromDB();  // Load 25 questions from MySQL
-        answers = new int[questions.length];
-        showLoginWindow();
+        showLoginWindow();   // Do NOT load questions here
     }
 
-  
-    // LOAD QUESTIONS FROM DATABASE
-  
-    private void loadQuestionsFromDB() {
-        questions = QuestionDBHandler.getAllQuestions();
+    //  Load questions AFTER login, based on level
+    private void loadQuestionsFromDB(String level) {
+
+        questions = QuestionDBHandler.getQuestionsByLevel(level);
 
         if (questions.length != 25) {
             JOptionPane.showMessageDialog(
                     null,
-                    "ERROR: Exactly 25 questions required. Found: " + questions.length
+                    "ERROR: Exactly 25 questions required for level "
+                            + level + ". Found: " + questions.length
             );
             System.exit(0);
         }
@@ -39,10 +34,7 @@ public class QuizApp {
         answers = new int[questions.length];
     }
 
-
-
-    // 1. LOGIN WINDOW
-  
+    // ================= LOGIN WINDOW =================
     private void showLoginWindow() {
         frame = new JFrame("Quiz App");
         frame.setSize(350, 220);
@@ -52,23 +44,18 @@ public class QuizApp {
         JPanel panel = new JPanel(new GridLayout(4, 2, 10, 10));
         panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
-        JLabel nameLabel = new JLabel("Name:");
         JTextField nameField = new JTextField();
-
-        JLabel countryLabel = new JLabel("Country:");
         JTextField countryField = new JTextField();
-
-        JLabel levelLabel = new JLabel("Level:");
         JComboBox<String> levelBox =
                 new JComboBox<>(new String[]{"Beginner", "Intermediate", "Advanced"});
 
         JButton loginBtn = new JButton("Login");
 
-        panel.add(nameLabel);
+        panel.add(new JLabel("Name:"));
         panel.add(nameField);
-        panel.add(countryLabel);
+        panel.add(new JLabel("Country:"));
         panel.add(countryField);
-        panel.add(levelLabel);
+        panel.add(new JLabel("Level:"));
         panel.add(levelBox);
 
         frame.add(panel, BorderLayout.CENTER);
@@ -86,24 +73,22 @@ public class QuizApp {
                 return;
             }
 
-            // Split name
             String[] parts = fullName.split(" ");
             String first = parts[0];
             String last = parts.length >= 2 ? parts[parts.length - 1] : "";
 
             Name name = new Name(first, last);
-            int[] scores = new int[5];
+            currentUser = new QuizCompetitor(0, name, level, country, new int[5]);
 
-            currentUser = new QuizCompetitor(0, name, level, country, scores);
+            // ✅ IMPORTANT
+            loadQuestionsFromDB(level);
 
             frame.dispose();
             showMainMenu();
         });
     }
 
-    
-    // 2. MAIN MENU WINDOW
-   
+    // ================= MAIN MENU =================
     private void showMainMenu() {
         frame = new JFrame("Quiz App");
         frame.setSize(300, 300);
@@ -134,11 +119,10 @@ public class QuizApp {
 
         startBtn.addActionListener(e -> {
             currentQuestion = 0;
-            answers = new int[questions.length]; // ✅ FIX
+            answers = new int[questions.length];
             frame.dispose();
             showQuizWindow();
         });
-
 
         leaderboardBtn.addActionListener(e -> showLeaderboardWindow());
 
@@ -149,95 +133,106 @@ public class QuizApp {
         quitBtn.addActionListener(e -> System.exit(0));
     }
 
-    // 3. QUIZ WINDOW
-   
+    // ================= QUIZ WINDOW =================
     private void showQuizWindow() {
         frame = new JFrame("Quiz App - Quiz");
         panel = new JPanel(new BorderLayout());
 
         Question q = questions[currentQuestion];
 
-        JLabel qLabel = new JLabel("Q"+(currentQuestion+1)+": "+q.getQuestionText());
+        JLabel qLabel = new JLabel("Q" + (currentQuestion + 1) + ": " + q.getQuestionText());
         panel.add(qLabel, BorderLayout.NORTH);
 
-        JPanel optionsPanel = new JPanel(new GridLayout(4,1));
+        JPanel optionsPanel = new JPanel(new GridLayout(4, 1));
         ButtonGroup group = new ButtonGroup();
         JRadioButton[] optionButtons = new JRadioButton[4];
-        for(int i=0;i<4;i++) {
+
+        for (int i = 0; i < 4; i++) {
             optionButtons[i] = new JRadioButton(q.getOptions()[i]);
             group.add(optionButtons[i]);
             optionsPanel.add(optionButtons[i]);
         }
+
         panel.add(optionsPanel, BorderLayout.CENTER);
 
-        JButton nextBtn = new JButton(currentQuestion==questions.length-1?"Submit":"Next");
+        JButton nextBtn = new JButton(
+                currentQuestion == questions.length - 1 ? "Submit" : "Next"
+        );
         panel.add(nextBtn, BorderLayout.SOUTH);
 
         frame.add(panel);
-        frame.setSize(600,400);
+        frame.setSize(600, 400);
         frame.setVisible(true);
 
         nextBtn.addActionListener(e -> {
             int selected = -1;
-            for(int i=0;i<4;i++) {
-                if(optionButtons[i].isSelected()) {
+            for (int i = 0; i < 4; i++) {
+                if (optionButtons[i].isSelected()) {
                     selected = i;
                     break;
                 }
             }
-            if(selected == -1) {
+
+            if (selected == -1) {
                 JOptionPane.showMessageDialog(frame, "Please select an option!");
                 return;
             }
+
             answers[currentQuestion] = selected;
 
             currentQuestion++;
             frame.dispose();
-            if(currentQuestion < questions.length) {
+
+            if (currentQuestion < questions.length) {
                 showQuizWindow();
             } else {
                 calculateScores();
-                JOptionPane.showMessageDialog(null,"Quiz Submitted!");
+                JOptionPane.showMessageDialog(null, "Quiz Submitted!");
                 showMainMenu();
             }
         });
     }
 
-  
-    // 4. CALCULATE SCORES (5-block average)
- 
+    // ================= SCORE CALCULATION =================
     private void calculateScores() {
         int[] finalScores = new int[5];
 
-        for(int i=0;i<5;i++) {
+        for (int i = 0; i < 5; i++) {
             int correctCount = 0;
-            for(int j=0;j<5;j++) {
-                int idx = i*5 + j;
-                if(answers[idx] == questions[idx].getCorrectOption()) {
+            for (int j = 0; j < 5; j++) {
+                int idx = i * 5 + j;
+                if (answers[idx] == questions[idx].getCorrectOption()) {
                     correctCount++;
                 }
             }
-            finalScores[i] = correctCount; // 0-5 per block
+            finalScores[i] = correctCount;
         }
 
-        currentUser = new QuizCompetitor(0, currentUser.getName(), currentUser.getLevel(), currentUser.getCountry(), finalScores);
+        currentUser = new QuizCompetitor(
+                0,
+                currentUser.getName(),
+                currentUser.getLevel(),
+                currentUser.getCountry(),
+                finalScores
+        );
 
-        DatabaseHandler.saveCompetitor(currentUser); // save scores to DB
+        DatabaseHandler.saveCompetitor(currentUser);
     }
+
+    // ================= LEADERBOARD WINDOW (your original, fixed) =================
     private void showLeaderboardWindow() {
 
         QuizCompetitor[] all = DatabaseHandler.getAllCompetitors();
         CompetitorList list = new CompetitorList(all);
 
-    
-        // LEADERBOARD TABLE
-      
+        // ================= TABLE =================
         String[] columns = {
                 "ID", "Name", "Level", "Country",
                 "Score1", "Score2", "Score3", "Score4", "Score5", "Overall"
         };
 
         Object[][] data = new Object[all.length][10];
+
         for (int i = 0; i < all.length; i++) {
             QuizCompetitor c = all[i];
             int[] s = c.getScoreArray();
@@ -255,15 +250,25 @@ public class QuizApp {
         }
 
         JTable table = new JTable(data, columns);
-        table.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
         table.setFillsViewportHeight(true);
-
         JScrollPane tableScroll = new JScrollPane(table);
         tableScroll.setPreferredSize(new Dimension(850, 280));
 
-     
-        // FREQUENCY TABLE (COMPACT)
-      
+        // ✅ CLICK ROW TO SEE DETAILS
+        table.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                int row = table.getSelectedRow();
+                if (row >= 0) {
+                    QuizCompetitor selected = all[row];
+                    JOptionPane.showMessageDialog(frame,
+                            selected.getFullDetails(),
+                            "Competitor Details",
+                            JOptionPane.INFORMATION_MESSAGE);
+                }
+            }
+        });
+
+        // ================= FREQUENCY TABLE =================
         int[] freq = list.getScoreFrequencies();
 
         JPanel freqGrid = new JPanel(new GridLayout(2, 7, 8, 4));
@@ -281,9 +286,7 @@ public class QuizApp {
         freqWrapper.setBorder(BorderFactory.createTitledBorder("Score Frequency"));
         freqWrapper.add(freqGrid);
 
-      
-        // TOP PANEL (TITLE + BACK)
-       
+        // ================= TOP PANEL =================
         JButton backBtn = new JButton("Back");
 
         JLabel title = new JLabel("Leaderboard", SwingConstants.CENTER);
@@ -293,9 +296,7 @@ public class QuizApp {
         topPanel.add(backBtn, BorderLayout.WEST);
         topPanel.add(title, BorderLayout.CENTER);
 
-     
-        // MAIN PANEL
-      
+        // ================= MAIN PANEL =================
         JPanel mainPanel = new JPanel(new BorderLayout(10, 10));
         mainPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
@@ -303,25 +304,18 @@ public class QuizApp {
         mainPanel.add(tableScroll, BorderLayout.CENTER);
         mainPanel.add(freqWrapper, BorderLayout.SOUTH);
 
-     
-        // DIALOG
-     
+        // ================= DIALOG =================
         JDialog dialog = new JDialog(frame, "Leaderboard", true);
         dialog.setContentPane(mainPanel);
         dialog.pack();
         dialog.setLocationRelativeTo(frame);
 
-        // ✅ Back button logic
         backBtn.addActionListener(e -> dialog.dispose());
 
         dialog.setVisible(true);
     }
 
-
-   
-    // MAIN METHOD
-  
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> new QuizApp());
+        SwingUtilities.invokeLater(QuizApp::new);
     }
 }
