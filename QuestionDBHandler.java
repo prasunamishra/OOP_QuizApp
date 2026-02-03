@@ -4,80 +4,81 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.Collections;
 
-
+/**
+ * Handles database operations related to quiz questions.
+ * This class retrieves questions from the database
+ * based on the selected difficulty level.
+ */
 public class QuestionDBHandler {
-	private static final String URL = "jdbc:mysql://localhost:3306/CompetitionDB";
-	private static final String USER = "root";
-	private static final String PASSWORD = "";
 
-	public static Question[] getQuestionsByLevel(String level) {
+    // Database connection details
+    private static final String URL = "jdbc:mysql://localhost:3306/CompetitionDB";
+    private static final String USER = "root";
+    private static final String PASSWORD = "";
 
-<<<<<<< HEAD
-    // ✅ NEW METHOD: Get questions by level and shuffle
+    /**
+     * Retrieves all quiz questions for a given level from the database.
+     *
+     * @param level the difficulty level (e.g., Beginner, Intermediate, Advanced)
+     * @return an array of Question objects shuffled into random order
+     */
     public static Question[] getQuestionsByLevel(String level) {
-=======
-	    ArrayList<Question> questions = new ArrayList<>();
->>>>>>> 7614aa90571b065a38862d7343329bf41aa0e527
 
-	    String sql = "SELECT * FROM Questions WHERE level = ? LIMIT 25";
+        // Dynamic list to store questions retrieved from the database
+        ArrayList<Question> questions = new ArrayList<>();
 
-<<<<<<< HEAD
+        // SQL query to select questions for the specified level
         String sql = "SELECT * FROM Questions WHERE level = ?";
 
-        try (Connection conn = DriverManager.getConnection(URL, USER, PASSWORD);
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+        try (
+            // Establish database connection
+            Connection conn = DriverManager.getConnection(URL, USER, PASSWORD);
 
-            pstmt.setString(1, level);
+            // Prepare SQL statement with parameter
+            PreparedStatement stmt = conn.prepareStatement(sql)
+        ) {
 
-            ResultSet rs = pstmt.executeQuery();
-=======
-	    try {
-	        Connection conn = DriverManager.getConnection(URL, USER, PASSWORD);
-	        PreparedStatement stmt = conn.prepareStatement(sql);
->>>>>>> 7614aa90571b065a38862d7343329bf41aa0e527
+            // Set the level parameter
+            stmt.setString(1, level);
 
-	        stmt.setString(1, level);
+            // Execute query
+            ResultSet rs = stmt.executeQuery();
 
-	        ResultSet rs = stmt.executeQuery();
+            // Process each result row
+            while (rs.next()) {
 
-<<<<<<< HEAD
+                // Retrieve answer options from the database
+                String[] options = {
+                        rs.getString("option1"),
+                        rs.getString("option2"),
+                        rs.getString("option3"),
+                        rs.getString("option4")
+                };
+
+                // Retrieve index of correct option (0–3)
                 int correct = rs.getInt("correctOption");
-=======
-	        while (rs.next()) {
->>>>>>> 7614aa90571b065a38862d7343329bf41aa0e527
 
-	            String[] options = new String[4];
-	            options[0] = rs.getString("option1");
-	            options[1] = rs.getString("option2");
-	            options[2] = rs.getString("option3");
-	            options[3] = rs.getString("option4");
+                // Create Question object
+                Question q = new Question(
+                        rs.getString("questionText"),
+                        options,
+                        correct
+                );
 
-	            int correct = rs.getInt("correctOption");
+                // Add question to the list
+                questions.add(q);
+            }
 
-<<<<<<< HEAD
-        // ✅ Shuffle questions every time
-        Collections.shuffle(list);
+        } catch (Exception e) {
+            // Handle database or SQL errors
+            System.out.println("Error loading questions");
+            e.printStackTrace();
+        }
 
-        return list.toArray(new Question[0]);
+        // Randomise question order before returning
+        Collections.shuffle(questions);
+
+        // Convert ArrayList to array
+        return questions.toArray(new Question[0]);
     }
 }
-=======
-	            Question q = new Question(
-	                    rs.getString("questionText"),
-	                    options,
-	                    correct
-	            );
-
-	            questions.add(q);
-	        }
-
-	        conn.close(); // close connection
-
-	    } catch (Exception e) {
-	        System.out.println("Error loading questions");
-	    }
-
-	    return questions.toArray(new Question[0]);
-	}
-}
->>>>>>> 7614aa90571b065a38862d7343329bf41aa0e527
